@@ -1,7 +1,8 @@
+import { auth, signIn, signOut } from "@/auth";
 import type { Metadata } from "next";
+import { SessionProvider } from "next-auth/react";
 import localFont from "next/font/local";
 import Link from "next/link";
-import { SessionProvider } from "./components/SessionProvider";
 import UserButton from "./components/UserButton";
 
 import "./globals.css";
@@ -22,13 +23,22 @@ export const metadata: Metadata = {
   description: "Chat GPT App developed in Nextjs",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+  if (session?.user) {
+    session.user = {
+      name: session.user.name,
+      email: session.user.email,
+      image: session.user.image,
+    };
+  }
+
   return (
-    <SessionProvider>
+    <SessionProvider basePath="/api/auth" session={session}>
       <html lang="en">
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased px-2 md:px-5`}
@@ -41,7 +51,16 @@ export default function RootLayout({
               </Link>
             </div>
             <div>
-              <UserButton />
+              <UserButton
+                signInAction={async () => {
+                  "use server";
+                  await signIn();
+                }}
+                signOutAction={async () => {
+                  "use server";
+                  await signOut();
+                }}
+              />
             </div>
           </header>
           <div className="flex flex-col md:flex-row">
